@@ -192,16 +192,17 @@ app.add_handler(MessageHandler(filters.ALL, handle))
 
 print("🔥 МЭРИЯ БОТ ИШТЕП ЖАТАТ")
 app.run_polling()
-import os
-from flask import Flask
-from threading import Thread
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return "Bot is running!"
-
+# Бул функция портту иштетет
 def run():
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+# МААНИЛҮҮ: Бул саптар эч кандай боштуксуз (indent), эң сол чекеде турушу керек
+if __name__ == "__main__":
+    # 1. Адегенде веб-серверди өзүнчө агымда иштетебиз
     Thread(target=run).start()
+    
+    # 2. Андан кийин ботту иштетебиз
+    print("🚀 МЭРИЯ БОТ ИШТЕП ЖАТАТ...")
+    application = ApplicationBuilder().token(TOKEN).build()
+    # (Бул жерде сиздин калган коддоруңуз: add_handler ж.б.)
+    application.run_polling()
