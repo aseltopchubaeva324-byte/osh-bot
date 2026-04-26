@@ -190,8 +190,7 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.ALL, handle))
 
-print("🔥 МЭРИЯ БОТ ИШТЕП ЖАТАТ")
-app.run_polling()
+
 import os
 import logging
 from flask import Flask
@@ -242,3 +241,5 @@ if __name__ == "__main__":
         application.run_polling()
     else:
         print("Ката: BOT_TOKEN табылган жок!")
+        print("🔥 МЭРИЯ БОТ ИШТЕП ЖАТАТ")
+app.run_polling()
