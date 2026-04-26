@@ -192,17 +192,53 @@ app.add_handler(MessageHandler(filters.ALL, handle))
 
 print("🔥 МЭРИЯ БОТ ИШТЕП ЖАТАТ")
 app.run_polling()
-# Бул функция портту иштетет
-def run():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+import os
+import logging
+from flask import Flask
+from threading import Thread
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# МААНИЛҮҮ: Бул саптар эч кандай боштуксуз (indent), эң сол чекеде турушу керек
-if __name__ == "__main__":
-    # 1. Адегенде веб-серверди өзүнчө агымда иштетебиз
-    Thread(target=run).start()
+# --- 1. ВЕБ-СЕРВЕР (RENDER ҮЧҮН) ---
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Мэрия боту иштеп жатат!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
+# --- 2. БОТТУН ФУНКЦИЯЛАРЫ ---
+TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = 1652310358 # Бул жерге кийин мэриянын админин ID номерин жазасыз
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Саламатсызбы! Ош шаарынын мэриясынын ботуна билдирүү калтырыңыз.")
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.from_user
+    text = update.message.text
+    await update.message.reply_text("Рахмат! Билдирүүңүз админге жөнөтүлдү.")
     
-    # 2. Андан кийин ботту иштетебиз
-    print("🚀 МЭРИЯ БОТ ИШТЕП ЖАТАТ...")
-    application = ApplicationBuilder().token(TOKEN).build()
-    # (Бул жерде сиздин калган коддоруңуз: add_handler ж.б.)
-    application.run_polling()
+    admin_text = f"Жаңы билдирүү!\nКимден: {user.first_name}\nID: {user.id}\nТекст: {text}"
+    await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+
+# --- 3. БОТТУ ИШКЕ КИРГИЗҮҮ ---
+if __name__ == "__main__":
+    # Веб-серверди өзүнчө агымда (Thread) иштетүү
+    server_thread = Thread(target=run_web)
+    server_thread.start()
+    
+    # Ботту иштетүү
+    if TOKEN:
+        application = ApplicationBuilder().token(TOKEN).build()
+        
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+        
+        print("🚀 МЭРИЯ БОТ ИШТЕП ЖАТАТ...")
+        application.run_polling()
+    else:
+        print("Ката: BOT_TOKEN табылган жок!")
