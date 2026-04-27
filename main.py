@@ -157,7 +157,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📍 Ленин көчөсү 221", reply_markup=InlineKeyboardMarkup(keyboard))
           # БАЙЛАНЫШ
     elif text in ["📞 Байланыш", "📞 Контакты"]:
-        await update.message.reply_text("📞 03222 5-55-51\n📧 info@oshcity.kg")elif text in ["📞 Байланыш", "📞 Контакты"]:
+        await update.message.reply_text("📞 03222 5-55-51\n📧 info@oshcity.kg")
 
     msg = (
         "📞 *Ош шаарынын мэриясы – байланыш номерлери*\n\n"
