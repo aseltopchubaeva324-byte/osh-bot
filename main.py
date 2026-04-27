@@ -149,11 +149,11 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text in ["📍 Дарек", "📍 Адрес"]:
         keyboard = [[InlineKeyboardButton("🗺 2GIS", url="https://2gis.kg/bishkek/geo/70000001030888860")]]
         await update.message.reply_text("📍 Ленин көчөсү 221", reply_markup=InlineKeyboardMarkup(keyboard))
-     # БАЙЛАНЫШ (КОНТАКТЫ) БӨЛҮМҮ
+     # --- БАЙЛАНЫШ (КОНТАКТЫ) БӨЛҮМҮ ---
     elif text in ["📞 Байланыш", "📞 Контакты"]:
         if lang == "ru":
             msg = (
-                "📞 *Мэрия города Ош – contactные номера*\n\n"
+                "📞 *Мэрия города Ош – контактные номера*\n\n"
                 "🏛 **Общий отдел (Канцелярия):** 0 3222 5-51-51\n"
                 "☎️ **Телефон доверия:** 0 3222 5-55-51\n\n"
                 "📌 Организационно-инспекторский отдел: 0 3222 5-56-42\n"
@@ -187,7 +187,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "📌 Техникалык тейлөө: 0 3222 5-54-34\n\n"
                 "📧 info@oshcity.kg"
             )
-        await update.message.reply_text(msg, parse_mode="Markdown")
         await update.message.reply_text(msg, parse_mode="Markdown")
             # ДОКУМЕНТ
     elif text in ["📄 Документтер", "📄 Документы"]:
