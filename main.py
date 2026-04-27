@@ -44,13 +44,32 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     user_id = update.message.from_user.id
     
-    if text == "🇰🇬 Кыргызча":
+    # ТИЛ ТАНДОО (Кыргызча же Орусча экенин аныктоо)
+    if "Кыргызча" in text:
         user_lang[user_id] = "kg"
         await update.message.reply_text("Кыргызча тандалды 🇰🇬", reply_markup=ReplyKeyboardMarkup(menu_kg, resize_keyboard=True))
         return
-    elif text == "🇷🇺 Русский":
+    elif "Русский" in text:
         user_lang[user_id] = "ru"
         await update.message.reply_text("Русский язык выбран 🇷🇺", reply_markup=ReplyKeyboardMarkup(menu_ru, resize_keyboard=True))
+        return
+
+    # Тилди текшерүү (Эгер тил тандала элек болсо, автоматтык түрдө кыргызча кылат)
+    lang = user_lang.get(user_id, "kg")
+
+    # --- АРЫЗДЫ КАБЫЛ АЛУУ (Сен сураган сылык жооп ушул жерде) ---
+    if user_state.get(user_id) == "waiting_text":
+        cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
+        conn.commit()
+        await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
+        
+        thanks_msg = (
+            "✅ Арызыңыз кабыл алынды. Биз аны мүмкүн болушунча тез арада карап чыгып, чечип бергенге аракет кылабыз. Кайрылганыңыз үчүн рахмат!" 
+            if lang == "kg" else 
+            "✅ Ваша заявка принята. Мы постараемся рассмотреть и решить её в кратчайшие сроки. Спасибо за обращение!"
+        )
+        await update.message.reply_text(thanks_msg)
+        user_state[user_id] = None
         return
 
     lang = user_lang.get(user_id)
