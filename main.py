@@ -71,11 +71,8 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(thanks_msg)
         user_state[user_id] = None
         return
-
     lang = user_lang.get(user_id)
     if not lang: return
-
-   
 # --- МЭРИЯ ЖӨНҮНДӨ БӨЛҮМҮ ---
     if text in ["🏛 Мэрия жөнүндө", "🏛 О мэрии"]:
         if lang == "ru":
@@ -124,7 +121,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "👥 **Калкы:** 366 000+ (500 000 чейин)\n\n"
                 "🌐 **Мааниси:** Тарыхый, маданий жана туристтик борбор."
             )
-        
         kb = [
             [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/")],
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")],
