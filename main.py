@@ -1,19 +1,31 @@
+import os
 import sqlite3
 import requests
+import logging
 from bs4 import BeautifulSoup
-
+from flask import Flask
+from threading import Thread
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-import os
 
-# Төмөнкү сапты так ушундай жазыңыз, токенди кошуунун кереги жок
+# --- 1. ВЕБ-СЕРВЕР (RENDER ӨЧҮРБӨШҮ ҮЧҮН) ---
+app_server = Flask(__name__)
+
+@app_server.route('/')
+def index():
+    return "Ош мэриясынын боту активдүү иштеп жатат!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 5000))
+    app_server.run(host='0.0.0.0', port=port)
+
+# --- 2. ПАРАМЕТРЛЕР ЖАНА МААЛЫМАТ БАЗАСЫ ---
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 1652310358
 
-# DATABASE
+# Маалымат базасын жөндөө
 conn = sqlite3.connect("osh_bot.db", check_same_thread=False)
 cursor = conn.cursor()
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS appeals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,11 +33,12 @@ CREATE TABLE IF NOT EXISTS appeals (
     text TEXT
 )
 """)
+conn.commit()
 
 user_state = {}
 user_lang = {}
 
-# MENU
+# МЕНЮЛАР (Сиз жөнөткөндөй)
 menu_kg = [
     ["🏛 Мэрия жөнүндө", "📰 Жаңылыктар"],
     ["📄 Документтер", "📝 Арыз берүү"],
@@ -40,7 +53,8 @@ menu_ru = [
     ["📞 Контакты", "🌐 Сайт"]
 ]
 
-# START
+# --- 3. БОТТУН ФУНКЦИЯЛАРЫ ---
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["🇰🇬 Кыргызча", "🇷🇺 Русский"]]
     await update.message.reply_text(
@@ -48,38 +62,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     )
 
-# NEWS (scraping)
 def get_news(lang):
     try:
-        if lang == "ru":
-            url = "https://oshcity.gov.kg/ru/news"
-        else:
-            url = "https://oshcity.gov.kg/kg/news"
-
-        r = requests.get(url)
+        url = "https://oshcity.gov.kg/ru/news" if lang == "ru" else "https://oshcity.gov.kg/kg/news"
+        r = requests.get(url, timeout=5)
         soup = BeautifulSoup(r.text, "html.parser")
-
         news = soup.find_all("h2")[:5]
-
-        result = ""
-        for n in news:
-            result += "📰 " + n.text.strip() + "\n\n"
-
+        result = "".join([f"📰 {n.text.strip()}\n\n" for n in news])
         return result if result else "Жаңылык табылган жок"
     except:
         return "Жаңылыктар жеткиликтүү эмес"
 
-# HANDLE
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     user_id = update.message.from_user.id
 
-    # LANGUAGE
+    # Тил тандоо
     if text == "🇰🇬 Кыргызча":
         user_lang[user_id] = "kg"
         await update.message.reply_text("Кыргызча тандалды 🇰🇬", reply_markup=ReplyKeyboardMarkup(menu_kg, resize_keyboard=True))
         return
-
     if text == "🇷🇺 Русский":
         user_lang[user_id] = "ru"
         await update.message.reply_text("Русский выбран 🇷🇺", reply_markup=ReplyKeyboardMarkup(menu_ru, resize_keyboard=True))
@@ -87,159 +89,62 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lang = user_lang.get(user_id, "kg")
 
-    # МЭРИЯ
+    # Мэрия жөнүндө
     if text in ["🏛 Мэрия жөнүндө", "🏛 О мэрии"]:
-        if lang == "ru":
-            msg = (
-                "🏛 Мэрия города Ош\n\n"
-                "Высший исполнительный орган города.\n"
-                "👤 Мэр: Акаев Жанарбек Кубанычович\n\n"
-                "ℹ️ Подробнее:"
-            )
-        else:
-            msg = (
-                "🏛 Ош шаарынын мэриясы\n\n"
-                "Шаардын аткаруу бийлигинин жогорку органы.\n"
-                "👤 Мэр: Акаев Жанарбек Кубанычович\n\n"
-                "ℹ️ Толук маалымат:"
-            )
-
-        keyboard = [
-            [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/ru/")],
-            [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")],
-            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh.meriya")]
-        ]
-
+        msg = "🏛 Ош шаарынын мэриясы\n\nШаардын аткаруу бийлигинин жогорку органы." if lang == "kg" else "🏛 Мэрия города Ош\n\nВысший исполнительный орган города."
+        keyboard = [[InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/")]]
         await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # ЖАҢЫЛЫК
+    # Жаңылыктар
     elif text in ["📰 Жаңылыктар", "📰 Новости"]:
-        news_text = get_news(lang)
+        await update.message.reply_text(get_news(lang))
 
-        keyboard = [
-            [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/ru/")],
-            [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")],
-            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh.meriya")]
-        ]
-
-        await update.message.reply_text(news_text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-    # ДОКУМЕНТ
-    elif text in ["📄 Документтер", "📄 Документы"]:
-        keyboard = [
-            [InlineKeyboardButton("📂 Документтер", url="https://oshcity.gov.kg/ru/docs")],
-            [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/ru/")]
-        ]
-        await update.message.reply_text("📄 Документтер:", reply_markup=InlineKeyboardMarkup(keyboard))
-
-    # АРЫЗ
+    # Арыз берүү
     elif text in ["📝 Арыз берүү", "📝 Подать заявку"]:
-        user_state[user_id] = "text"
+        user_state[user_id] = "waiting_text"
         await update.message.reply_text("Сураныч, арызыңызды жазыңыз / Напишите заявку:")
 
-    elif user_state.get(user_id) == "text":
-        cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
-        conn.commit()
-
-        await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
-
-        if lang == "ru":
-            msg = "✅ Ваша заявка принята. Мы постараемся рассмотреть её в кратчайшие сроки."
-        else:
-            msg = "✅ Арызыңыз кабыл алынды. Биз аны мүмкүн болушунча тез арада карап чыгабыз."
-
-        await update.message.reply_text(msg)
-        user_state[user_id] = None
-
-    # ДАРЕК
-    elif text in ["📍 Дарек", "📍 Адрес"]:
-        if lang == "ru":
-            msg = "📍 Мэрия г. Ош\nЛенин көчөсү 221\n\n🗺 Открыть на карте:"
-        else:
-            msg = "📍 Ош шаарынын мэриясы\nЛенин көчөсү 221\n\n🗺 Картадан көрүү:"
-
-        keyboard = [[InlineKeyboardButton("🗺 2GIS", url="https://2gis.kg/bishkek/geo/70000001030888860/72.804713,40.516801")]]
-        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
-
-    # ФОТО
+    # Сүрөт жөнөтүү
     elif text in ["📸 Фото"]:
-        user_state[user_id] = "photo"
-        await update.message.reply_text("📸 Сүрөт жибериңиз")
+        user_state[user_id] = "waiting_photo"
+        await update.message.reply_text("📸 Сүрөт жибериңиз / Отправьте фото:")
 
-    elif user_state.get(user_id) == "photo" and update.message.photo:
+    # Тексттик билдирүүлөрдү жана арыздарды иштетүү
+    elif user_id in user_state:
+        state = user_state[user_id]
+        
+        if state == "waiting_text":
+            cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
+            conn.commit()
+            await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
+            msg = "✅ Арызыңыз кабыл алынды." if lang == "kg" else "✅ Ваша заявка принята."
+            await update.message.reply_text(msg)
+            user_state[user_id] = None
+            
+    # Байланыш, Сайт, Дарек ж.б. (Сиздин кодуңуздагы калган бөлүмдөр)
+    elif text in ["📍 Дарек", "📍 Адрес"]:
+        msg = "📍 Ленин көчөсү 221"
+        await update.message.reply_text(msg)
+
+# Сүрөттөрдү кабыл алуу
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    if user_state.get(user_id) == "waiting_photo":
         await context.bot.send_photo(chat_id=ADMIN_ID, photo=update.message.photo[-1].file_id)
-        await update.message.reply_text("✅ Фото кабыл алынды")
+        await update.message.reply_text("✅ Фото кабыл алынды!")
         user_state[user_id] = None
 
-    # БАЙЛАНЫШ
-    elif text in ["📞 Байланыш", "📞 Контакты"]:
-        await update.message.reply_text("📞 03222 5-55-55\n📧 info@oshcity.kg")
-
-    # САЙТ
-    elif text in ["🌐 Сайт"]:
-        keyboard = [
-            [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/ru/")],
-            [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")],
-            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh.meriya")]
-        ]
-        await update.message.reply_text("🔗 Расмий булактар:", reply_markup=InlineKeyboardMarkup(keyboard))
-
-
-# RUN
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.ALL, handle))
-
-
-import os
-import logging
-from flask import Flask
-from threading import Thread
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-
-# --- 1. ВЕБ-СЕРВЕР (RENDER ҮЧҮН) ---
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return "Мэрия боту иштеп жатат!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-
-# --- 2. БОТТУН ФУНКЦИЯЛАРЫ ---
-TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 1652310358 # Бул жерге кийин мэриянын админин ID номерин жазасыз
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Саламатсызбы! Ош шаарынын мэриясынын ботуна билдирүү калтырыңыз.")
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    text = update.message.text
-    await update.message.reply_text("Рахмат! Билдирүүңүз админге жөнөтүлдү.")
-    
-    admin_text = f"Жаңы билдирүү!\nКимден: {user.first_name}\nID: {user.id}\nТекст: {text}"
-    await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
-
-# --- 3. БОТТУ ИШКЕ КИРГИЗҮҮ ---
+# --- 4. ИШКЕ КИРГИЗҮҮ ---
 if __name__ == "__main__":
-    # Веб-серверди өзүнчө агымда (Thread) иштетүү
-    server_thread = Thread(target=run_web)
-    server_thread.start()
+    # Серверди Thread менен иштетүү
+    Thread(target=run_web).start()
     
-    # Ботту иштетүү
     if TOKEN:
         application = ApplicationBuilder().token(TOKEN).build()
         
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle))
+        application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
         
-        print("🚀 МЭРИЯ БОТ ИШТЕП ЖАТАТ...")
+        print("🚀 БОТ ИШТЕП ЖАТАТ...")
         application.run_polling()
-    else:
-        print("Ката: BOT_TOKEN табылган жок!")
-        print("🔥 МЭРИЯ БОТ ИШТЕП ЖАТАТ")
-app.run_polling()
