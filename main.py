@@ -94,6 +94,26 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")]
         ]
         await update.message.reply_text("🔗 Расмий булактар:", reply_markup=InlineKeyboardMarkup(kb))
+        # ДАРЕК
+    elif text in ["📍 Дарек", "📍 Адрес"]:
+        keyboard = [[InlineKeyboardButton("🗺 2GIS", url="https://2gis.kg/bishkek/geo/70000001030888860")]]
+        await update.message.reply_text("📍 Ленин көчөсү 221", reply_markup=InlineKeyboardMarkup(keyboard))
+          # БАЙЛАНЫШ
+    elif text in ["📞 Байланыш", "📞 Контакты"]:
+        await update.message.reply_text("📞 03222 5-55-55\n📧 info@oshcity.kg")
+            # ДОКУМЕНТ
+    elif text in ["📄 Документтер", "📄 Документы"]:
+        keyboard = [[InlineKeyboardButton("📂 Документтер", url="https://oshcity.gov.kg/ru/docs")]]
+        await update.message.reply_text("📄 Документтер:", reply_markup=InlineKeyboardMarkup(keyboard))
+ # ФОТО
+    elif text in ["📸 Фото"]:
+        user_state[user_id] = "photo"
+        await update.message.reply_text("📸 Сүрөт жибериңиз")
+
+    elif user_state.get(user_id) == "photo" and update.message.photo:
+        await context.bot.send_photo(chat_id=ADMIN_ID, photo=update.message.photo[-1].file_id)
+        await update.message.reply_text("✅ Фото кабыл алынды")
+        user_state[user_id] = None
 
     # --- АРЫЗ БЕРҮҮ ---
     elif text in ["📝 Арыз берүү", "📝 Подать заявку"]:
