@@ -127,28 +127,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")]
         ]
           await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
-
-    # --- БАЙЛАНЫШ (КОНТАКТЫ) БӨЛҮМҮ ---
-    elif text in ["📞 Байланыш", "📞 Контакты"]:
-        if lang == "ru":
-            msg = (
-                "📞 **Контактные номера Мэрии города Ош:**\n\n"
-                "🏛 Общий отдел: 0 3222 5-51-51\n"
-                "☎️ Телефон доверия: 0 3222 5-55-51\n"
-                "📌 Экономика: 0 3222 7-07-01\n"
-                "📌 Юридический сектор: 0 3222 5-50-65\n\n"
-                "📧 info@oshcity.kg"
-            )
-        else:
-            msg = (
-                "📞 **Ош шаарынын мэриясы – байланыш номерлери:**\n\n"
-                "🏛 Жалпы бөлүм: 0 3222 5-51-51\n"
-                "☎️ Ишеним телефону: 0 3222 5-55-51\n"
-                "📌 Экономика: 0 3222 7-07-01\n"
-                "📌 Юридикалык сектор: 0 3222 5-50-65\n\n"
-                "📧 info@oshcity.kg"
-            )
-        await update.message.reply_text(msg, parse_mode="Markdown")
     # --- ЖАҢЫЛЫКТАР ---
     elif text in ["📰 Жаңылыктар", "📰 Новости"]:
         msg = "📰 Жаңылыктарды төмөнкү расмий булактардан окуй аласыздар:" if lang == "kg" else "📰 Вы можете прочитать новости в официальных источниках:"
