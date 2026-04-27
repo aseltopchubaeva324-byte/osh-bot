@@ -1,7 +1,6 @@
 import os
 import sqlite3
 import requests
-import logging
 from bs4 import BeautifulSoup
 from flask import Flask
 from threading import Thread
@@ -29,14 +28,17 @@ conn.commit()
 user_state = {}
 user_lang = {}
 
-# --- 3. МЕНЮЛАР ---
+# МЕНЮЛАР
 menu_kg = [["🏛 Мэрия жөнүндө", "📰 Жаңылыктар"], ["📄 Документтер", "📝 Арыз берүү"], ["📍 Дарек", "📸 Фото"], ["📞 Байланыш", "🌐 Сайт"]]
 menu_ru = [["🏛 О мэрии", "📰 Новости"], ["📄 Документы", "📝 Подать заявку"], ["📍 Адрес", "📸 Фото"], ["📞 Контакты", "🌐 Сайт"]]
 
-# --- 4. ФУНКЦИЯЛАР ---
+# --- 3. ФУНКЦИЯЛАР ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["🇰🇬 Кыргызча", "🇷🇺 Русский"]]
-    await update.message.reply_text("Кош келиңиз! / Добро пожаловать!\n\nТилди тандаңыз / Выберите язык:", reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+    await update.message.reply_text(
+        "Кош келиңиз! / Добро пожаловать!\n\nТилди тандаңыз / Выберите язык:", 
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    )
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -54,62 +56,66 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = user_lang.get(user_id)
     if not lang: return
 
-    # --- МЭРИЯ ЖӨНҮНДӨ (Сиз айткан маалыматтар ушул жерде) ---
+    # --- МЭРИЯ ЖӨНҮНДӨ (Сайттар кошулду) ---
     if text in ["🏛 Мэрия жөнүндө", "🏛 О мэрии"]:
         msg = (
-            "🏛 **МЭРИЯ ГОРОДА ОШ**\n\n"
-            "📍 723500, Кыргызская Республика, город Ош, ул. Алымбек Датка, 221\n"
+            "🏛 **МЭРИЯ ГОРОДА ОШ**\n\n📍 723500, г. Ош, ул. Алымбек Датка, 221\n"
             "📞 0 3222 5-51-51, 0 3222 5-55-51\n"
-            "⏰ Режим работы: 9:00 - 18:00 (15-ноября - 31-марта)"
+            "⏰ Режим работы: 9:00 - 18:00\n\n"
+            "🔗 Официальные ресурсы:"
         ) if lang == "ru" else (
-            "🏛 **ОШ ШААРЫНЫН МЭРИЯСЫ**\n\n"
-            "📍 723500, Кыргыз Республикасы, Ош шаары, Алымбек Датка көчөсү, 221\n"
+            "🏛 **ОШ ШААРЫНЫН МЭРИЯСЫ**\n\n📍 723500, Ош ш., Алымбек Датка көчөсү, 221\n"
             "📞 0 3222 5-51-51, 0 3222 5-55-51\n"
-            "⏰ Иштөө тартиби: 9:00 - 18:00 (15-ноябрь - 31-март)"
-        )
-          kb = [
-            [InlineKeyboardButton("🌐 Расмий сайт", url="https://oshcity.gov.kg/kg/news")],
-            [InlineKeyboardButton("📱 Facebook", url="https://www.facebook.com/OshMeriya")],
-            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")]
-        await update.message.reply_text(msg, parse_mode="Markdown")
-
-    # --- ЖАҢЫЛЫКТАР (Шилтемелер менен) ---
-    elif text in ["📰 Жаңылыктар", "📰 Новости"]:
-        msg = (
-            "📰 Жаңылыктарды төмөнкү сайттардан окуй аласыздар:" if lang == "kg" 
-            else "📰 Вы можете прочитать новости на следующих сайтах:"
+            "⏰ Иштөө тартиби: 9:00 - 18:00\n\n"
+            "🔗 Расмий булактар:"
         )
         kb = [
+            [InlineKeyboardButton("🌐 Расмий сайт", url="https://oshcity.gov.kg/")],
+            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")],
+            [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")]
+        ]
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
+
+    # --- ЖАҢЫЛЫКТАР ---
+    elif text in ["📰 Жаңылыктар", "📰 Новости"]:
+        msg = "📰 Жаңылыктарды төмөнкү расмий булактардан окуй аласыздар:" if lang == "kg" else "📰 Вы можете прочитать новости в официальных источниках:"
+        kb = [
             [InlineKeyboardButton("🌐 Расмий сайт", url="https://oshcity.gov.kg/kg/news")],
-            [InlineKeyboardButton("📱 Facebook", url="https://www.facebook.com/OshMeriya")],
-            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")]
+            [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")],
+            [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")]
         ]
         await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb))
 
-    # --- САЙТ (Инстаграм, Фейсбук кошулду) ---
+    # --- САЙТ ---
     elif text in ["🌐 Сайт"]:
-        msg = "🔗 Расмий булактар / Официальные ресурсы:"
         kb = [
-            [InlineKeyboardButton("🌐 Официальный сайт", url="https://oshcity.gov.kg/")],
+            [InlineKeyboardButton("🌐 Сайт", url="https://oshcity.gov.kg/")],
             [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")],
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")]
         ]
-        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb))
+        await update.message.reply_text("🔗 Расмий булактар:", reply_markup=InlineKeyboardMarkup(kb))
 
     # --- АРЫЗ БЕРҮҮ ---
     elif text in ["📝 Арыз берүү", "📝 Подать заявку"]:
         user_state[user_id] = "waiting_text"
-        await update.message.reply_text("Сураныч, арызыңызды жазыңыз / Напишите вашу заявку:")
+        msg = "Сураныч, арызыңызды же кайрылууңузду кенен жазыңыз:" if lang == "kg" else "Пожалуйста, напишите вашу заявку или обращение подробно:"
+        await update.message.reply_text(msg)
 
-    # --- АРЫЗДЫ КАБЫЛ АЛУУ ---
+    # --- АРЫЗДЫ КАБЫЛ АЛУУ (Сылык жооп) ---
     elif user_state.get(user_id) == "waiting_text":
         cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
         conn.commit()
         await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
-        await update.message.reply_text("✅ Кабыл алынды! / Принято!")
+        
+        thanks_msg = (
+            "✅ Арызыңыз ийгиликтүү кабыл алынды. Биз аны мүмкүн болушунча тез арада карап чыгып, чечип бергенге аракет кылабыз. Кайрылганыңыз үчүн рахмат!" 
+            if lang == "kg" else 
+            "✅ Ваша заявка успешно принята. Мы постараемся рассмотреть и решить её в кратчайшие сроки. Спасибо за обращение!"
+        )
+        await update.message.reply_text(thanks_msg)
         user_state[user_id] = None
 
-# --- 5. ИШКЕ КИРГИЗҮҮ ---
+# --- 4. ИШКЕ КИРГИЗҮҮ ---
 if __name__ == "__main__":
     Thread(target=run_web).start()
     if TOKEN:
