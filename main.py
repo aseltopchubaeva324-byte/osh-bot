@@ -157,7 +157,47 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📍 Ленин көчөсү 221", reply_markup=InlineKeyboardMarkup(keyboard))
           # БАЙЛАНЫШ
     elif text in ["📞 Байланыш", "📞 Контакты"]:
-        await update.message.reply_text("📞 03222 5-55-51\n📧 info@oshcity.kg")
+        await update.message.reply_text("📞 03222 5-55-51\n📧 info@oshcity.kg")elif text in ["📞 Байланыш", "📞 Контакты"]:
+
+    msg = (
+        "📞 *Ош шаарынын мэриясы – байланыш номерлери*\n\n"
+
+        "📌 Уюштуруу-инспектордук бөлүм:\n"
+        "0 3222 5-56-42\n\n"
+
+        "📌 Экономика жана финансы:\n"
+        "0 3222 7-07-01\n"
+        "0 3222 5-50-89\n\n"
+
+        "📌 Шаар куруу жана муниципалдык менчик:\n"
+        "0 3222 5-53-79\n\n"
+
+        "📌 Социалдык өнүгүү:\n"
+        "0 3222 5-53-06\n\n"
+
+        "📌 Өзгөчө кырдаалдар жана коопсуздук:\n"
+        "0 3222 5-58-29\n\n"
+
+        "📌 Шаардык чарба жана транспорт:\n"
+        "0 3222 5-53-34\n\n"
+
+        "📌 Документтик камсыздоо:\n"
+        "0 3222 5-52-62\n\n"
+
+        "📌 Маалыматтык камсыздоо:\n"
+        "0 3222 5-50-19\n\n"
+
+        "📌 Юридикалык сектор:\n"
+        "0 3222 5-50-65\n\n"
+
+        "📌 Адам ресурстары:\n"
+        "0 3222 5-54-59\n\n"
+
+        "📌 Техникалык тейлөө:\n"
+        "0 3222 5-54-34\n"
+    )
+
+    await update.message.reply_text(msg, parse_mode="Markdown")
             # ДОКУМЕНТ
     elif text in ["📄 Документтер", "📄 Документы"]:
         keyboard = [[InlineKeyboardButton("📂 Документтер", url="https://oshcity.gov.kg/ru/docs")]]
