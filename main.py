@@ -44,21 +44,20 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     user_id = update.message.from_user.id
     
-    # ТИЛ ТАНДОО (Кыргызча же Орусча экенин аныктоо)
-    if "Кыргызча" in text:
+    # ТИЛ ТАНДОО
+    if text == "🇰🇬 Кыргызча":
         user_lang[user_id] = "kg"
         await update.message.reply_text("Кыргызча тандалды 🇰🇬", reply_markup=ReplyKeyboardMarkup(menu_kg, resize_keyboard=True))
         return
-    elif "Русский" in text:
+    elif text == "🇷🇺 Русский":
         user_lang[user_id] = "ru"
         await update.message.reply_text("Русский язык выбран 🇷🇺", reply_markup=ReplyKeyboardMarkup(menu_ru, resize_keyboard=True))
         return
 
-    # Тилди текшерүү (Эгер тил тандала элек болсо, автоматтык түрдө кыргызча кылат)
     lang = user_lang.get(user_id, "kg")
 
-    # --- АРЫЗДЫ КАБЫЛ АЛУУ (Сен сураган сылык жооп ушул жерде) ---
-    if user_state.get(user_id) == "waiting_text":
+    # --- АРЫЗДЫ КАБЫЛ АЛУУ (Тексттик) ---
+    if user_state.get(user_id) == "waiting_text" and not text.startswith("/"):
         cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
         conn.commit()
         await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
@@ -71,9 +70,8 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(thanks_msg)
         user_state[user_id] = None
         return
-    lang = user_lang.get(user_id)
-    if not lang: return
-# --- МЭРИЯ ЖӨНҮНДӨ БӨЛҮМҮ ---
+
+    # --- МЭРИЯ ЖӨНҮНДӨ БӨЛҮМҮ ---
     if text in ["🏛 Мэрия жөнүндө", "🏛 О мэрии"]:
         if lang == "ru":
             msg = (
@@ -126,8 +124,8 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")],
             [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")]
         ]
-          await update.message.reply_text(msg,reply_markup=InlineKeyboardMarkup(kb),parse_mode="Markdown"
-          )
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
+
     # --- ЖАҢЫЛЫКТАР ---
     elif text in ["📰 Жаңылыктар", "📰 Новости"]:
         msg = "📰 Жаңылыктарды төмөнкү расмий булактардан окуй аласыздар:" if lang == "kg" else "📰 Вы можете прочитать новости в официальных источниках:"
@@ -146,11 +144,13 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")]
         ]
         await update.message.reply_text("🔗 Расмий булактар:", reply_markup=InlineKeyboardMarkup(kb))
-        # ДАРЕК
+
+    # --- ДАРЕК ---
     elif text in ["📍 Дарек", "📍 Адрес"]:
-        keyboard = [[InlineKeyboardButton("🗺 2GIS", url="https://2gis.kg/bishkek/geo/70000001030888860")]]
+        keyboard = [[InlineKeyboardButton("🗺 2GIS", url="https://2gis.kg/osh/geo/70000001030888860")]]
         await update.message.reply_text("📍 Ленин көчөсү 221", reply_markup=InlineKeyboardMarkup(keyboard))
-     # --- БАЙЛАНЫШ (КОНТАКТЫ) БӨЛҮМҮ ---
+
+    # --- БАЙЛАНЫШ (КОНТАКТЫ) БӨЛҮМҮ ---
     elif text in ["📞 Байланыш", "📞 Контакты"]:
         if lang == "ru":
             msg = (
@@ -159,10 +159,10 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "☎️ **Телефон доверия:** 0 3222 5-55-51\n\n"
                 "📌 Организационно-инспекторский отдел: 0 3222 5-56-42\n"
                 "📌 Экономика и финансы: 0 3222 7-07-01\n"
-                "📌 Градостроительство и муниципальная собственность: 0 3222 5-53-79\n"
+                "📌 Градостроительство: 0 3222 5-53-79\n"
                 "📌 Социальное развитие: 0 3222 5-53-06\n"
-                "📌 Чрезвычайные ситуации и безопасность: 0 3222 5-58-29\n"
-                "📌 Городское хозяйство и транспорт: 0 3222 5-53-34\n"
+                "📌 ЧС и безопасность: 0 3222 5-58-29\n"
+                "📌 Городское хозяйство: 0 3222 5-53-34\n"
                 "📌 Документационное обеспечение: 0 3222 5-52-62\n"
                 "📌 Информационное обеспечение: 0 3222 5-50-19\n"
                 "📌 Юридический сектор: 0 3222 5-50-65\n"
@@ -170,7 +170,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "📌 Техническое обслуживание: 0 3222 5-54-34\n\n"
                 "📧 info@oshcity.kg"
             )
-     else:
+        else:
             msg = (
                 "📞 *Ош шаарынын мэриясы – байланыш номерлери*\n\n"
                 "🏛 **Жалпы бөлүм (Кеңсе):** 0 3222 5-51-51\n"
@@ -189,19 +189,17 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "📧 info@oshcity.kg"
             )
         await update.message.reply_text(msg, parse_mode="Markdown")
-            # ДОКУМЕНТ
+
+    # --- ДОКУМЕНТ ---
     elif text in ["📄 Документтер", "📄 Документы"]:
         keyboard = [[InlineKeyboardButton("📂 Документтер", url="https://oshcity.gov.kg/ru/docs")]]
         await update.message.reply_text("📄 Документтер:", reply_markup=InlineKeyboardMarkup(keyboard))
- # ФОТО
+
+    # --- ФОТО ---
     elif text in ["📸 Фото"]:
         user_state[user_id] = "photo"
-        await update.message.reply_text("📸 Сүрөт жибериңиз")
-
-    elif user_state.get(user_id) == "photo" and update.message.photo:
-        await context.bot.send_photo(chat_id=ADMIN_ID, photo=update.message.photo[-1].file_id)
-        await update.message.reply_text("✅ Фото кабыл алынды")
-        user_state[user_id] = None
+        msg = "📸 Сураныч, сүрөт жибериңиз:" if lang == "kg" else "📸 Пожалуйста, отправьте фото:"
+        await update.message.reply_text(msg)
 
     # --- АРЫЗ БЕРҮҮ ---
     elif text in ["📝 Арыз берүү", "📝 Подать заявку"]:
@@ -209,18 +207,12 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "Сураныч, арызыңызды же кайрылууңузду кененирээк жазыңыз:" if lang == "kg" else "Пожалуйста, напишите вашу заявку или обращение подробно:"
         await update.message.reply_text(msg)
 
-    # --- АРЫЗДЫ КАБЫЛ АЛУУ (Сылык жооп) ---
-    elif user_state.get(user_id) == "waiting_text":
-        cursor.execute("INSERT INTO appeals (user, text) VALUES (?, ?)", (str(user_id), text))
-        conn.commit()
-        await context.bot.send_message(chat_id=ADMIN_ID, text=f"📩 Жаңы арыз:\n{text}")
-        
-        thanks_msg = (
-            "✅ Арызыңыз ийгиликтүү кабыл алынды. Биз аны мүмкүн болушунча тез арада карап чыгып, чечип бергенге аракет кылабыз. Кайрылганыңыз үчүн рахмат!" 
-            if lang == "kg" else 
-            "✅ Ваша заявка успешно принята. Мы постараемся рассмотреть и решить её в кратчайшие сроки. Спасибо за обращение!"
-        )
-        await update.message.reply_text(thanks_msg)
+# Сүрөт кабыл алуу функциясы (handle ичинде)
+async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    if user_state.get(user_id) == "photo":
+        await context.bot.send_photo(chat_id=ADMIN_ID, photo=update.message.photo[-1].file_id, caption=f"📸 Жаңы фото (User ID: {user_id})")
+        await update.message.reply_text("✅ Фото кабыл алынды!")
         user_state[user_id] = None
 
 # --- 4. ИШКЕ КИРГИЗҮҮ ---
@@ -229,5 +221,6 @@ if __name__ == "__main__":
     if TOKEN:
         app = ApplicationBuilder().token(TOKEN).build()
         app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
         app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle))
         app.run_polling()
