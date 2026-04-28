@@ -126,10 +126,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("📸 Instagram", url="https://www.instagram.com/osh_meriya/")],
             [InlineKeyboardButton("📘 Facebook", url="https://www.facebook.com/OshMeriya")]
         ]
-          await update.message.reply_text(
-              msg,
-              reply_markup=InlineKeyboardMarkup(kb), 
-              parse_mode="Markdown"
+          await update.message.reply_text(msg,reply_markup=InlineKeyboardMarkup(kb),parse_mode="Markdown"
           )
     # --- ЖАҢЫЛЫКТАР ---
     elif text in ["📰 Жаңылыктар", "📰 Новости"]:
