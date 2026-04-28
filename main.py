@@ -169,7 +169,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "📌 Техническое обслуживание: 0 3222 5-54-34\n\n"
                 "📧 info@oshcity.kg"
             )
-    else:
+     else:
             msg = (
                 "📞 *Ош шаарынын мэриясы – байланыш номерлери*\n\n"
                 "🏛 **Жалпы бөлүм (Кеңсе):** 0 3222 5-51-51\n"
